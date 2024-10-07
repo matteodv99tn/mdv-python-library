@@ -31,7 +31,7 @@ def figlet(text: str) -> str:
         return fallback(text)
 
 
-def heading(text: str, *args):
+def heading(text: str, *args) -> str:
     """
     Generate and print a stylized ASCII art heading with optional additional text.
 
@@ -43,23 +43,53 @@ def heading(text: str, *args):
         *args: Additional text to be appended to each line of the ASCII art.
 
     Returns:
-        None
+        str: The generated ASCII art heading with appended additional text on its right.
 
     Example:
-        heading("Hello World!", "This is", "a test")
+        my_heading = heading("Hello World!", "This is", "a test")
+        print(my_heading)
         >>> _   _      _ _         __        __         _     _ _
         >>> | | | | ___| | | ___    \ \      / /__  _ __| | __| | |
         >>> | |_| |/ _ \ | |/ _ \    \ \ /\ / / _ \| '__| |/ _` | |
         >>> |  _  |  __/ | | (_) |    \ V  V / (_) | |  | | (_| |_| This is
-        >>> |_| |_|\___|_|_|\___/      \_/\_/ \___/|_|  |_|\__,_(_) a test         
+        >>> |_| |_|\___|_|_|\___/      \_/\_/ \___/|_|  |_|\__,_(_) a test   
     """
     head_text = figlet(text)
     head_split = head_text.split("\n")
-    max_chars = max(head_split, key=len)
+    longest_line = max(head_split, key=len)
     n_lines = len(head_split)
     n_delta = n_lines - len(args)
+    content = ""
     for i in range(n_lines):
-        line = head_split[i].rstrip().ljust(len(max_chars))
+        line = head_split[i].rstrip().ljust(len(longest_line))
         if i >= n_delta:
             line += f" {args[i - n_delta]}"
-        print(line)
+        content += line + "\n"
+
+    return content
+
+
+def print_heading(text: str, *args):
+    """
+    Print a stylized ASCII art heading with optional additional text.
+
+    This function calls the `heading` function to generate an ASCII art representation of the provided text 
+    and prints the result. It allows for additional text to be appended to the heading.
+
+    Args:
+        text (str): The main text to be converted into ASCII art.
+        *args: Additional text to be appended to the heading.
+
+    Returns:
+        None
+
+    Example:
+        print_heading("Hello World!", "This is", "a test")
+        >>> _   _      _ _         __        __         _     _ _
+        >>> | | | | ___| | | ___    \ \      / /__  _ __| | __| | |
+        >>> | |_| |/ _ \ | |/ _ \    \ \ /\ / / _ \| '__| |/ _` | |
+        >>> |  _  |  __/ | | (_) |    \ V  V / (_) | |  | | (_| |_| This is
+        >>> |_| |_|\___|_|_|\___/      \_/\_/ \___/|_|  |_|\__,_(_) a test    
+    """
+
+    print(heading(text, *args))
