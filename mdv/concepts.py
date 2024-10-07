@@ -14,7 +14,7 @@ def is_floating(x) -> bool:
     Returns:
         bool: True if x is a floating-point number, False otherwise.
     """
-    return isinstance(x, (float, np.float32, np.float64))
+    return np.issubdtype(type(x), np.floating) or isinstance(x, float)
 
 
 def is_array(x) -> bool:

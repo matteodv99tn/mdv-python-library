@@ -1,4 +1,5 @@
 import subprocess
+import shlex
 
 
 def figlet(text: str) -> str:
@@ -23,7 +24,8 @@ def figlet(text: str) -> str:
         return out
 
     try:
-        ret = subprocess.check_output(["figlet", text])
+        quoted_text = shlex.quote(text)
+        ret = subprocess.check_output(["figlet", quoted_text])
         return ret.decode("utf-8").rstrip()
     except subprocess.CalledProcessError as e:
         return fallback(text)
@@ -59,5 +61,5 @@ def heading(text: str, *args):
     for i in range(n_lines):
         line = head_split[i].rstrip().ljust(len(max_chars))
         if i >= n_delta:
-            line += " " + args[i - n_delta]
+            line += f" {args[i - n_delta]}"
         print(line)
