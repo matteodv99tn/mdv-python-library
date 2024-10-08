@@ -33,8 +33,46 @@ def eval_gaussian_basis(
 
 
 class Dmp:
+    """
+    A class representing a Dynamic Movement Primitive (DMP) for trajectory generation.
+
+    This class encapsulates the parameters and methods necessary to define and learn a DMP, 
+    allowing for the integration of learned trajectories and the plotting of basis functions. 
+    It provides functionality to compute desired forcing terms, learn weights from demonstrations, 
+    and integrate the DMP over time.
+
+    Attributes:
+        alpha (float): The alpha parameter controlling the convergence rate.
+        beta (float): The beta parameter controlling the attractor strength.
+        gamma (float): The gamma parameter controlling the phase variable decay.
+        n_basis (int): The number of basis functions used in the DMP.
+        tau (Optional[float]): The time constant for the DMP.
+        g (Optional[float | np.ndarray]): The goal configuration of the DMP.
+        y0 (Optional[float | np.ndarray]): The starting configuration of the DMP.
+        c (np.ndarray): The weight centers for the basis functions.
+        h (np.ndarray): The widths of the basis functions.
+        w (Optional[np.ndarray]): The learned weights for the DMP.
+        y (Optional[float | np.ndarray]): The current position of the DMP.
+    """
+
 
     def __init__(self, alpha: float, beta: float, gamma: float, n_basis: int = 15):
+        """
+        Initialize a Dynamic Movement Primitive (DMP) with specified parameters.
+
+        This constructor sets up the DMP with the given alpha, beta, gamma, and number of basis functions. 
+        It also initializes weight centers and checks that the provided parameters are valid.
+
+        Args:
+            alpha (float): The alpha parameter controlling the convergence rate.
+            beta (float): The beta parameter controlling the attractor strength.
+            gamma (float): The gamma parameter controlling the phase variable decay.
+            n_basis (int, optional): The number of basis functions used in the DMP. Defaults to 15.
+
+        Raises:
+            ValueError: If alpha, beta, or gamma are not positive, or if n_basis is not a positive integer.
+        """
+
         self.alpha: float = alpha
         self.beta: float = beta
         self.gamma: float = gamma
@@ -69,15 +107,60 @@ class Dmp:
     def construct_s(
         self, t: float | np.ndarray, tau: float = 1.0
     ) -> float | np.ndarray:
+        """
+        Calculate the phase variable based on time and the specified tau.
+
+        This method computes the phase variable, which is used in the DMP, by applying an exponential decay 
+        function to the input time values. The decay is controlled by the gamma parameter and the tau value.
+
+        Args:
+            t (float | np.ndarray): The time or array of time values for which to compute the phase variable.
+            tau (float, optional): The time constant for the decay. Defaults to 1.0.
+
+        Returns:
+            float | np.ndarray: The computed phase variable as a float or an array of floats.
+        """
         return np.exp(-self.gamma * t / tau)
 
     def compute_desired_forcing_term(self, dem: Demonstration) -> np.ndarray:
+        """
+        Calculate the desired forcing term based on the provided demonstration.
+
+        This method computes the desired forcing term for the DMP using the acceleration, position, and velocity 
+        data from the demonstration. It ensures that the demonstration is populated before performing the calculation.
+
+        Args:
+            dem (Demonstration): The demonstration object containing the trajectory data.
+
+        Returns:
+            np.ndarray: The computed desired forcing term as a numpy array.
+
+        Raises:
+            ValueError: If the demonstration is not populated.
+        """
         dem.ensure_is_populated()
         g = dem.p[-1]
         tau = dem.tau()
         return tau**2 * dem.a - self.alpha * (self.beta * (g - dem.p) - dem.v)
 
     def learn_weights(self, dem: Demonstration) -> np.ndarray:
+        """
+        Learn the weights of the Dynamic Movement Primitive (DMP) from a demonstration.
+
+        This method computes the weights for the DMP based on the provided demonstration data. 
+        It ensures that the demonstration is populated and contains a sufficient number of samples before 
+        calculating the desired forcing term and learning the weights.
+
+        Args:
+            dem (Demonstration): The demonstration object containing the trajectory data.
+
+        Returns:
+            np.ndarray: The learned weights for the DMP as a numpy array.
+
+        Raises:
+            ValueError: If the demonstration is not populated or if the number of samples is too low to learn the DMP.
+        """
+
         dem.ensure_is_populated()
 
         # Check that demonstration contains a reasonable amount of samples
@@ -115,6 +198,26 @@ class Dmp:
         y0: Optional[float | np.ndarray] = None,
         g: Optional[float | np.ndarray] = None,
     ) -> Demonstration:
+        """
+        Integrate the Dynamic Movement Primitive (DMP) over a specified time duration.
+
+        This method computes the trajectory of the DMP by integrating its dynamics over time, 
+        using the learned weights and initial conditions. It returns a Demonstration object containing 
+        the time, position, velocity, and acceleration data.
+
+        Args:
+            dt (float): The time step for the integration.
+            T (float): The total time duration for the integration.
+            tau (Optional[float], optional): The time constant for the DMP. Defaults to the DMP's tau, or T.
+            y0 (Optional[float | np.ndarray], optional): The initial position. Defaults to the DMP's y0.
+            g (Optional[float | np.ndarray], optional): The goal position. Defaults to the DMP's g.
+
+        Returns:
+            Demonstration: A Demonstration object containing the integrated trajectory data.
+
+        Raises:
+            ValueError: If the DMP has not been learned before integration.
+        """
         if not self.is_learned():
             raise ValueError("DMP must be learned before integration")
         t = np.arange(0, T, dt)
@@ -141,6 +244,19 @@ class Dmp:
         return Demonstration(t, y, z / self.tau, a / self.tau)
 
     def plot_basis(self, T: Optional[float] = None, tau: Optional[float] = None):
+        """
+        Plot the basis functions and the phase variable of the Dynamic Movement Primitive (DMP).
+
+        This method generates plots to visualize the relationship between the basis functions and the phase variable 
+        over time. It allows for an optional total time duration and time constant to be specified for the plots.
+
+        Args:
+            T (Optional[float], optional): The total time duration for the plots. Defaults to the DMP's tau if not provided.
+            tau (Optional[float], optional): The time constant for the DMP. Defaults to the DMP's tau if not provided.
+
+        Returns:
+            tuple: A tuple containing the figure and axes objects of the generated plots.
+        """
         tau = tau or self.tau
         t = np.linspace(0, T or tau, 300)
         s = self.construct_s(t, tau)
