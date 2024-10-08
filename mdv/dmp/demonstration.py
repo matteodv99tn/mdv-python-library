@@ -50,9 +50,9 @@ class Demonstration:
         """
         self.ensure_have_valid_shapes()
         return all((
-            self.p.shape[0] == 1,
-            self.v.shape[0] == 1,
-            self.a.shape[0] == 1,
+            len(self.p.shape) == 1,
+            len(self.v.shape) == 1,
+            len(self.a.shape) == 1,
         ))
 
     def pos_dimension(self) -> int:
@@ -65,9 +65,7 @@ class Demonstration:
             int: The dimension of the position data.
         """
         self.ensure_have_valid_shapes()
-        if self.is_scalar():
-            return 1
-        return self.p.shape[0]
+        return 1 if self.is_scalar() else self.p.shape[0]
 
     def vel_dimension(self) -> int:
         """
@@ -79,9 +77,7 @@ class Demonstration:
             int: The dimension of the velocity data.
         """
         self.ensure_have_valid_shapes()
-        if self.is_scalar():
-            return 1
-        return self.v.shape[0]
+        return 1 if self.is_scalar() else self.v.shape[0]
 
     def plot(self, title: str = ""):
         """
@@ -99,6 +95,9 @@ class Demonstration:
 
         Raises:
             ValueError: If the shapes of the demonstration fields are not valid.
+
+        Note:
+            This method does not call plt.show() to display the plot in a new window.
         """
         self.ensure_have_valid_shapes()
 
@@ -184,3 +183,34 @@ class Demonstration:
         if self.v.shape[0] == 1: self.v = self.v.squeeze()
         if self.a.shape[0] == 1: self.a = self.a.squeeze()
         return self
+
+
+if __name__ == "__main__":
+    # Create a cosine based demonstration with default parameters
+    dem1 = Demonstration().set_cosine()
+    assert dem1.is_scalar()
+
+    # Create a cosine based demonstration with custom angular frequencies
+    # and demonstration rate, and plot it
+    dem2 = Demonstration().set_cosine(
+        omega=np.array([1.0 / np.pi, 2.0 / np.pi, 3.0 / np.pi]), n_samples=200, T=15.0
+    )
+    print(dem2.pos_dimension())
+    assert dem2.pos_dimension() == 3
+    dem2.plot()
+    plt.show()  # the plot does not automatically call plt.show()
+
+    # Create demonstration with random data
+    t = np.linspace(0, 10, 100)
+    p = np.random.rand(3, 100)
+    v = np.random.rand(3, 100)
+    a = np.random.rand(3, 100)
+    dem3 = Demonstration(t, p, v, a)
+    assert dem3.pos_dimension() == 3
+
+    # Update one field (e.g., the acceleration) with non-matching shaped data
+    dem3.a = np.random.rand(3, 50)
+    try:
+        dem3.ensure_have_valid_shapes()
+    except ValueError as e:
+        print("Correctly caught the exception")
