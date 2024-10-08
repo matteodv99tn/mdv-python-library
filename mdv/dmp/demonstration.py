@@ -211,6 +211,30 @@ class Demonstration:
         if self.a.shape[0] == 1: self.a = self.a.squeeze()
         return self
 
+    def set_polynomial_minimum_jerk(
+        self,
+        T: float = 10.0,
+        n_samples: int = 100,
+        y0: float | np.ndarray = 0.0,
+        yf: float | np.ndarray = 1.0
+    ):
+        dim = 1 if np.isscalar(y0) else len(y0)
+        self.t = np.linspace(0, T, n_samples)
+
+        delta = np.atleast_2d(yf - y0).T
+        a0 = np.atleast_2d(y0).reshape(dim, 1)
+        a1 = np.zeros_like(a0)
+        a2 = np.zeros_like(a0)
+        a3 = 10 * delta / T**3
+        a4 = -15 * delta / T**4
+        a5 = 6 * delta / T**5
+
+        t = np.atleast_2d(self.t)
+        self.p = a0 + a1*t + a2 * t**2 + a3 * t**3 + a4 * t**4 + a5 * t**5
+        self.v = a1 + 2*a2*t + 3 * a3 * t**2 + 4 * a4 * t**3 + 5 * a5 * t**4
+        self.a = 2*a2 + 6*a3*t + 12 * a4 * t**2 + 20 * a5 * t**3
+        return self
+
 
 if __name__ == "__main__":
     # Create a cosine based demonstration with default parameters
@@ -242,3 +266,14 @@ if __name__ == "__main__":
         dem3.ensure_have_valid_shapes()
     except ValueError as e:
         print("Correctly caught the exception")
+
+    # Create mimimum jerk polynomial demonstration
+    dem4 = Demonstration().set_polynomial_minimum_jerk(
+        y0=2, yf=-2, T=3.0, n_samples=100
+    )
+    dem5 = Demonstration().set_polynomial_minimum_jerk(
+        y0=np.array([5.0, 0.0]), yf=np.array([1.0, 3.0]), T=10.0, n_samples=100
+    )
+    dem4.plot()
+    dem5.plot()
+    plt.show()
