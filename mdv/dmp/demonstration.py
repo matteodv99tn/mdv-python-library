@@ -102,11 +102,14 @@ class Demonstration:
         self.ensure_have_valid_shapes()
 
         fig, axs = plt.subplots(3, 1, figsize=(8, 6), sharex=True)
-        for i in range(self.p.shape[0]):
-            axs[0].plot(self.t, self.p[i, :], label=f"p{i}")
-        for i in range(self.v.shape[0]):
-            axs[1].plot(self.t, self.v[i, :], label=f"v{i}")
-            axs[2].plot(self.t, self.a[i, :], label=f"a{i}")
+        p = self.p.reshape(self.pos_dimension(), -1)
+        v = self.v.reshape(self.vel_dimension(), -1)
+        a = self.a.reshape(self.vel_dimension(), -1)
+        for i in range(p.shape[0]):
+            axs[0].plot(self.t, p[i, :], label=f"p{i}")
+        for i in range(v.shape[0]):
+            axs[1].plot(self.t, v[i, :], label=f"v{i}")
+            axs[2].plot(self.t, a[i, :], label=f"a{i}")
 
         if self.p.shape[0] > 1:
             axs[0].legend()
@@ -195,8 +198,9 @@ if __name__ == "__main__":
     dem2 = Demonstration().set_cosine(
         omega=np.array([1.0 / np.pi, 2.0 / np.pi, 3.0 / np.pi]), n_samples=200, T=15.0
     )
-    print(dem2.pos_dimension())
     assert dem2.pos_dimension() == 3
+
+    dem1.plot()
     dem2.plot()
     plt.show()  # the plot does not automatically call plt.show()
 
