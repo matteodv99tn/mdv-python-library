@@ -38,6 +38,19 @@ class Demonstration:
         ensure_have_valid_shapes,
     )
 
+    def tau(self) -> float:
+        """
+        Get the duration of the demonstration.
+
+        This method returns the duration of the demonstration, which is the difference between the last and 
+        first time samples.
+
+        Returns:
+            float: The duration of the demonstration.
+        """
+        self.ensure_is_populated()
+        return self.t[-1] - self.t[0]
+
     def is_scalar(self) -> bool:
         """
         Check if the demonstration is scalar.
@@ -79,6 +92,18 @@ class Demonstration:
         self.ensure_have_valid_shapes()
         return 1 if self.is_scalar() else self.v.shape[0]
 
+    def samples_count(self) -> int:
+        """
+        Get the number of samples in the demonstration.
+
+        This method returns the number of samples in the demonstration.
+
+        Returns:
+            int: The number of samples in the demonstration.
+        """
+        self.ensure_have_valid_shapes()
+        return len(self.p) if self.is_scalar() else self.p.shape[1]
+
     def plot(self, title: str = ""):
         """
         Plot the position, velocity, and acceleration of the demonstration over time.
@@ -111,9 +136,8 @@ class Demonstration:
             axs[1].plot(self.t, v[i, :], label=f"v{i}")
             axs[2].plot(self.t, a[i, :], label=f"a{i}")
 
-        if self.p.shape[0] > 1:
+        if not self.is_scalar():
             axs[0].legend()
-        if self.v.shape[0] > 1:
             axs[1].legend()
             axs[2].legend()
 

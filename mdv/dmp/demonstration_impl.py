@@ -53,13 +53,10 @@ def have_valid_shapes(self) -> bool:
     """
 
     self.ensure_is_populated()
-    p_shape_id = len(self.p.shape) - 1
-    v_shape_id = len(self.v.shape) - 1
-    a_shape_id = len(self.a.shape) - 1
     return all((
-        self.t.shape[0] == self.p.shape[p_shape_id],
-        self.t.shape[0] == self.v.shape[v_shape_id],
-        self.t.shape[0] == self.a.shape[a_shape_id],
+        self.t.shape[0] == self.p.shape[-1],
+        self.t.shape[0] == self.v.shape[-1],
+        self.t.shape[0] == self.a.shape[-1],
     ))
 
 
@@ -75,9 +72,9 @@ def ensure_have_valid_shapes(self):
     """
 
     if not self.have_valid_shapes():
-        logger.warn("Shapes of the Demonstration fields:")
-        logger.warn(f"t: {self.t.shape}")
-        logger.warn(f"p: {self.p.shape}")
-        logger.warn(f"v: {self.v.shape}")
-        logger.warn(f"a: {self.a.shape}")
+        logger.warning("Shapes of the Demonstration fields:")
+        logger.warning(f"t: {self.t.shape}")
+        logger.warning(f"p: {self.p.shape}")
+        logger.warning(f"v: {self.v.shape}")
+        logger.warning(f"a: {self.a.shape}")
         raise ValueError("The shapes of the Demonstration fields are not valid")
