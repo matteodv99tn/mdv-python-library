@@ -93,9 +93,6 @@ class Dmp:
         self.h[-1] = self.h[-2]
 
         self.w: Optional[np.ndarray] = None
-        self.g: Optional[float | np.ndarray] = None
-        self.y: Optional[float | np.ndarray] = None
-        self.tau: Optional[float] = None
 
         # Parameter check
         if self.alpha <= 0: raise ValueError("alpha must be positive")
@@ -179,7 +176,8 @@ class Dmp:
         self.tau = dem.tau()
 
         Phi = eval_gaussian_basis(s, self.c, self.h)
-        f = fd.T / (s * (self.g - self.y0))
+        den = (self.g - self.y0) * s if dem.is_scalar() else (self.g - self.y0).reshape(-1, 1) * s
+        f = (fd / den).T
         self.w = np.linalg.lstsq(Phi, f)[0]
         return self.w
 
@@ -226,20 +224,21 @@ class Dmp:
         g = g or self.g
         y0 = y0 or self.y0
 
-        y = np.zeros_like(t)
-        z = np.zeros_like(t)
-        a = np.zeros_like(t)
-        y[0] = y0
-        z[0] = 0.0
+        pdim = 1 if np.isscalar(y0) else len(y0)
+        y = np.atleast_2d(np.zeros((pdim, len(t))))
+        z = np.atleast_2d(np.zeros((pdim, len(t))))
+        a = np.atleast_2d(np.zeros((pdim, len(t))))
+        y[:, 0] = y0
+        z[:, 0] = 0.0
 
         for i in range(len(t) - 1):
             Phi = eval_gaussian_basis(s[i], self.c, self.h)
             f = Phi @ self.w * (g-y0) * s[i]
-            dz_dt = self.alpha * (self.beta * (g - y[i]) - z[i]) + f
-            a[i] = dz_dt / self.tau
-            z[i + 1] = z[i] + dt * dz_dt / self.tau
-            y[i + 1] = y[i] + dt * z[i] / self.tau
-        a[-1] = a[-2]
+            dz_dt = self.alpha * (self.beta * (g - y[:, i]) - z[:, i]) + f
+            a[:, i] = dz_dt / self.tau
+            z[:, i + 1] = z[:, i] + dt * dz_dt / self.tau
+            y[:, i + 1] = y[:, i] + dt * z[:, i] / self.tau
+        a[:, -1] = a[:, -2]
 
         return Demonstration(t, y, z / self.tau, a / self.tau)
 
@@ -283,6 +282,7 @@ class Dmp:
     def describe_properties(self, prfx: str = "") -> str:
         y0_desc = str(self.y0) if (self.y0 is not None) else "not set"
         g_desc = str(self.g) if (self.g is not None) else "not set"
+        tau_desc = str(self.tau) if (self.tau is not None) else "not set"
         lines = (
             f"{prfx}alpha: {self.alpha}",
             f"{prfx}beta: {self.beta}",
@@ -290,6 +290,7 @@ class Dmp:
             f"{prfx}number of basis: {self.n_basis}",
             f"{prfx}starting configuration: {y0_desc}",
             f"{prfx}goal configuration: {g_desc}",
+            f"{prfx}tau configuration: {tau_desc}",
         )
         return "\n".join(lines)
 
@@ -326,6 +327,20 @@ if __name__ == "__main__":
     # Plot both reference trajectory and one obtained by integration
     dem.plot("Reference")
     exec_traj.plot("DMP integration")
+    plt.show()
 
     dmp.plot_basis()
+
+    # Use the same object to train a 3dof DMP
+    dem2 = Demonstration().set_polynomial_minimum_jerk(
+        5.0,
+        120,
+        np.array([2.0, 0.0, -5.0]),
+        np.array([0.0, 5.0, 5.0]),
+    )
+    w = dmp.learn_weights(dem2)
+    exec_traj2 = dmp.integrate(0.01, 7.0, 5.0)
+    print(dmp.describe_properties())
+    dem2.plot("Reference")
+    exec_traj2.plot("DMP integration")
     plt.show()
