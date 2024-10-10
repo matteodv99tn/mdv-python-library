@@ -62,8 +62,8 @@ class ScalarDmpOptimProblem(DmpOptimisationProblemBase):
         self,
         N: int,
         vmax: float = 1.0,
-        vdelta: float = 0.3,
-        gdelta: float = 0.2,
+        vdelta: float = 0.1,
+        gdelta: float = 0.1,
         wmin: Optional[np.ndarray] = None,
         wmax: Optional[np.ndarray] = None
     ):
@@ -101,16 +101,16 @@ class ScalarDmpOptimProblem(DmpOptimisationProblemBase):
 
         self.nlp_x += [tau]
         self.nlp_x += [w[i] for i in range(self.nb)]
-        self.nlp_x0 += [self.tau, *self.w]
+        self.nlp_x0 += [float(self.tau), *self.w]
         self.nlp_lbx += [0.1]
         self.nlp_ubx += [ca.inf]
         self.nlp_lbx += wmin if wmin is not None else self.nb * [-ca.inf]
         self.nlp_ubx += wmax if wmax is not None else self.nb * [ca.inf]
 
-        zk = ca.SX.sym('z0')
-        yk = ca.SX.sym('y0')
+        zk = ca.SX.sym('z_0')
+        yk = ca.SX.sym('y_0')
         self.nlp_x += [zk, yk]
-        self.nlp_x0 += [0.0, y0]
+        self.nlp_x0 += [0.0, 0.0]
         self.nlp_lbx += [-ca.inf, -ca.inf]
         self.nlp_ubx += [ca.inf, ca.inf]
         self.nlp_g += [zk, yk - y0]
@@ -124,7 +124,7 @@ class ScalarDmpOptimProblem(DmpOptimisationProblemBase):
             zk = ca.SX.sym(f'z_{i+1}')
             yk = ca.SX.sym(f'y_{i+1}')
             self.nlp_x += [zk, yk]
-            self.nlp_x0 += [0.0, y0]
+            self.nlp_x0 += [0.0, 0.0]
             self.nlp_lbx += [-ca.inf, -ca.inf]
             self.nlp_ubx += [ca.inf, ca.inf]
 
@@ -179,9 +179,9 @@ if __name__ == "__main__":
 
     opti_prob = ScalarDmpOptimProblem(dmp)
     opti_prob.write_nlp_problem(200)
-    dmp.y0 = 1
-    dmp.g = -1
-    sol = opti_prob.solve(1, -1)
+    dmp.y0 = 1.0
+    dmp.g = -3.0
+    sol = opti_prob.solve(dmp.y0, dmp.g)
 
     tau = sol['x'][0]
     w = sol['x'].toarray()[1:16].flatten()
