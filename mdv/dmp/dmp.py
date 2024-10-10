@@ -9,6 +9,21 @@ from . import logger
 def eval_gaussian_basis(
     x: float | np.ndarray, c: float | np.ndarray, h: float | np.ndarray
 ) -> float | np.ndarray:
+    """
+    Evaluate the Gaussian basis function for given inputs. This function computes the Gaussian basis values based on the provided centers and widths, returning either a single value or an array of values.
+
+    Args:
+        x (float | np.ndarray): The input value(s) for which to evaluate the Gaussian basis.
+        c (float | np.ndarray): The center(s) of the Gaussian basis functions.
+        h (float | np.ndarray): The width(s) of the Gaussian basis functions.
+
+    Returns:
+        float | np.ndarray: The evaluated Gaussian basis value(s) corresponding to the input.
+
+    Raises:
+        ValueError: If the input types are invalid or do not match expected types.
+    """
+
     from ..concepts import is_floating, is_array
 
     def eval_single_basis(x: float, c: float, h: float) -> float:
@@ -29,7 +44,8 @@ def eval_gaussian_basis(
             Phi[i, :] = eval_whole_basis(x[i], c, h)
         return Phi
 
-    raise ValueError('Invalid input types')
+    msg = f"Invalid input types: x={type(x)}, c={type(c)}, h={type(h)}"
+    raise ValueError(msg)
 
 
 class Dmp:
@@ -54,7 +70,6 @@ class Dmp:
         w (Optional[np.ndarray]): The learned weights for the DMP.
         y (Optional[float | np.ndarray]): The current position of the DMP.
     """
-
 
     def __init__(self, alpha: float, beta: float, gamma: float, n_basis: int = 15):
         """
@@ -241,6 +256,9 @@ class Dmp:
         a[:, -1] = a[:, -2]
 
         return Demonstration(t, y, z / self.tau, a / self.tau)
+
+    def is_scalar(self) -> bool:
+        return np.isscalar(self.y0) and np.isscalar(self.g)
 
     def plot_basis(self, T: Optional[float] = None, tau: Optional[float] = None):
         """
