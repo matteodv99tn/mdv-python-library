@@ -15,6 +15,9 @@ class DmpOptimisationProblemBase:
     
     This class sets up the necessary parameters and logging for optimizing Dynamic Movement Primitives (DMPs).
 
+    This class of problems is particularly targetted to point-to-point (discrete) DMPs;
+    to learn more about the fundamental equation of DMPs, refer to the documentation of the :class:`mdv.dmp.Dmp` class.
+
     Note:
         In the following code, the following shorthand notations are used:
         - `s` is the canonical system variable
@@ -90,7 +93,7 @@ class DmpOptimisationProblemBase:
         wmin: Optional[np.ndarray] = None,
         wmax: Optional[np.ndarray] = None,
         wguess: Optional[np.ndarray] = None,
-        options: dict = {}
+        options: Optional[dict] = None
     ):
         """
         Prepare the properties for the non-linear programming (NLP) problem, by constructing an appropriate dictionary. 
@@ -115,6 +118,7 @@ class DmpOptimisationProblemBase:
         Examples:
             >>> nlp_props = self._prepare_nlp_props(wmin=np.array([-1, -1]), wmax=np.array([1, 1]))
         """
+        options = options or {}
 
         if wmin is not None and wmin.shape[-1] != self.nb:
             raise ValueError(
