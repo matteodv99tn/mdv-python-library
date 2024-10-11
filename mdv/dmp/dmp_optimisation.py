@@ -1,4 +1,5 @@
 import sys
+import math
 import logging
 import numpy as np
 import casadi as ca
@@ -42,13 +43,13 @@ class DmpOptimisationProblemBase:
 
         f(x) = (sum_{j=1}^{nb} w_j * psi_j(x)) / (sum_{j=1}^{nb} psi_j(x))
         """
-        s = ca.SX.sym('s')
+        s = ca.MX.sym('s')
 
-        psi = ca.SX.zeros(self.nb)
+        psi = ca.MX.zeros(self.nb)
         for j in range(self.nb):
             psi[j] = ca.exp(-self.h[j] * (s - self.c[j])**2)
 
-        w = ca.SX.sym('w', self.nb)
+        w = ca.MX.sym('w', self.nb)
         f = ca.dot(w, psi) / ca.sum1(psi)
         return ca.Function('forcing_function', [s, w], [f])
 
@@ -96,7 +97,6 @@ class DmpOptimisationProblemBase:
                 line = ", ".join(f"{e:.1f}" for e in v)
                 entries.append((k, line))
 
-
         print(tabulate(entries, headers=["Property", "Value"], tablefmt="rst"))
 
 
@@ -114,53 +114,51 @@ class ScalarDmpOptimProblem(DmpOptimisationProblemBase):
     ):
         # N: number of discrete time steps
 
-        self.nlp_x = list()  # optimisation variables
         self.nlp_g = list()  # constraints
         self.nlp_params = list()  # parameters
 
-        y0 = ca.SX.sym('y0')
-        g = ca.SX.sym('g')
+        y0 = ca.MX.sym('y0')
+        g = ca.MX.sym('g')
         self.nlp_params += [y0, g]
 
-        tau = ca.SX.sym('tau')
-        w = ca.SX.sym('w', self.nb)
+        tau = ca.MX.sym('tau')
+        w = ca.MX.sym('w', self.nb)
+        Zs = ca.MX.sym('zs', N + 1)
+        Ys = ca.MX.sym('ys', N + 1)
+        self.nlp_x = ca.vertcat(tau, w, Zs, Ys)
 
-        f = self.construct_forcing_function()
+        psi = ca.MX.zeros(self.nb)
 
-        xi = ca.SX.sym('xi')
-        s = ca.exp(-self.gamma * xi)
-        zcurr = ca.SX.sym('zcurr')
-        ycurr = ca.SX.sym('ycurr')
-        yy0 = ca.SX.sym('yy0')
-        gg = ca.SX.sym('gg')
-        z_dot = self.alpha * (self.beta * (gg-ycurr) - zcurr) + f(s, w) * (gg-yy0) * s
+        zcurr = ca.MX.sym('zcurr')
+        ycurr = ca.MX.sym('ycurr')
+        gg = ca.MX.sym('gg')
+        ff = ca.MX.sym('forcing_term')
+        z_dot = self.alpha * (self.beta * (gg-ycurr) - zcurr) + ff
         y_dot = zcurr
-
-        z_ode = ca.Function('z_ode', [zcurr, ycurr, xi, w, yy0, gg], [z_dot])
+        z_ode = ca.Function('z_ode', [zcurr, ycurr, ff, gg], [z_dot])
         y_ode = ca.Function('y_ode', [zcurr], [y_dot])
 
-        self.nlp_x += [tau]
-        self.nlp_x += [w[i] for i in range(self.nb)]
-
-        zk = ca.SX.sym('z_0')
-        yk = ca.SX.sym('y_0')
-        self.nlp_x += [zk, yk]
-        self.nlp_g += [zk, yk - y0]
-
+        self.nlp_g += [Zs[0], Ys[0] - y0]
         dt = float(1 / N)
-        for i in range(N):
-            zk_next = zk + dt * z_ode(zk, yk, i * dt, w, y0, g)
-            yk_next = yk + dt * y_ode(zk)
-            zk = ca.SX.sym(f'z_{i+1}')
-            yk = ca.SX.sym(f'y_{i+1}')
-            self.nlp_x += [zk, yk]
-            self.nlp_g += [zk / tau, yk - yk_next, zk - zk_next]
 
-        self.nlp_g += [zk / tau, yk - g]
+        for i in range(N):
+            # Using MX expressions, it is not possible to rely on a function to compute
+            # the forcing term, since we can't insert the a-priori knowledge of the 
+            # coordinate system variable. So we compute it each time.
+            s = math.exp(-self.gamma * i * dt)
+            for j in range(self.nb):
+                psi[j] = ca.exp(-self.h[j] * (s - self.c[j])**2)
+            f = ca.dot(w, psi) / ca.sum1(psi) * (g-y0) * s
+
+            zk_next = Zs[i] + dt * z_ode(Zs[i], Ys[i], f, g)
+            yk_next = Ys[i] + dt * y_ode(Zs[i])
+            self.nlp_g += [Zs[i + 1] / tau, Ys[i + 1] - yk_next, Zs[i + 1] - zk_next]
+
+        self.nlp_g += [Zs[N] / tau, Ys[N] - g]
 
         prob_config = {
             'f': tau,
-            'x': ca.vertcat(*self.nlp_x),
+            'x': self.nlp_x,
             'g': ca.vertcat(*self.nlp_g),
             'p': ca.vertcat(*self.nlp_params)
         }
@@ -259,8 +257,7 @@ if __name__ == "__main__":
     # plt.show()
 
     opti_prob = ScalarDmpOptimProblem(dmp)
-    solver_opts = {'print_time': 0, 'ipopt.print_level': 0, 'ipopt.sb': 'yes'}
-    opti_prob.write_nlp_problem(200, solver_opts)
+    opti_prob.write_nlp_problem(200)
     dmp.y0 = 1.0
     dmp.g = -3.0
     sol = opti_prob.solve(dmp.y0, dmp.g)
