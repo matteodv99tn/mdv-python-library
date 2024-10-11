@@ -33,7 +33,7 @@ def figlet(text: str) -> str:
 
 def heading(text: str, *args) -> str:
     """
-    Generate and print a stylized ASCII art heading with optional additional text.
+    Generate a stylized ASCII art heading with optional additional text.
 
     This function creates an ASCII art representation of the provided text using the `figlet` function. 
     It prints each line of the ASCII art, appending any additional arguments to the corresponding lines.
@@ -46,9 +46,12 @@ def heading(text: str, *args) -> str:
         str: The generated ASCII art heading with appended additional text on its right.
 
     Example:
+
+    .. code-block:: python
+
         my_heading = heading("Hello World!", "This is", "a test")
         print(my_heading)
-        >>> _   _      _ _         __        __         _     _ _
+        >>>  _   _      _ _         __        __         _     _ _
         >>> | | | | ___| | | ___    \ \      / /__  _ __| | __| | |
         >>> | |_| |/ _ \ | |/ _ \    \ \ /\ / / _ \| '__| |/ _` | |
         >>> |  _  |  __/ | | (_) |    \ V  V / (_) | |  | | (_| |_| This is
@@ -84,8 +87,11 @@ def print_heading(text: str, *args):
         None
 
     Example:
+
+    .. code-block:: 
+
         print_heading("Hello World!", "This is", "a test")
-        >>> _   _      _ _         __        __         _     _ _
+        >>>  _   _      _ _         __        __         _     _ _
         >>> | | | | ___| | | ___    \ \      / /__  _ __| | __| | |
         >>> | |_| |/ _ \ | |/ _ \    \ \ /\ / / _ \| '__| |/ _` | |
         >>> |  _  |  __/ | | (_) |    \ V  V / (_) | |  | | (_| |_| This is

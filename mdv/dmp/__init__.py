@@ -13,4 +13,4 @@ logger.addHandler(stdout_handler)
 from .demonstration import Demonstration
 from .dmp import Dmp
 
-# from .dmp_optimisation import DmpOptimisationProblem
+from .dmp_optimisation import DmpOptimisationProblemBase, ScalarDmpOptimProblem
