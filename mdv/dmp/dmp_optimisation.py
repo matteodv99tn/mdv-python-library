@@ -76,7 +76,9 @@ class DmpOptimisationProblemBase:
 
         The forcing function is defined as:
 
-        f(x) = (sum_{j=1}^{nb} w_j * psi_j(x)) / (sum_{j=1}^{nb} psi_j(x))
+        .. math:: 
+
+           f(x) = \\frac{\sum_{j=1}^{nb} w_j  \psi_j(x)}{\sum_{j=1}^{nb} \psi_j(x)}
         """
         s = ca.MX.sym('s')
 
@@ -206,16 +208,16 @@ class ScalarDmpOptimProblem(DmpOptimisationProblemBase):
 
             To provide solver options, you can pass them as a dictionary to the `nlpsol_opts` argument, e.g.
 
-            ```
-            jit_options = {"flags": ["-O3"], "verbose": False, "compiler": "gcc"}
-            options = {
-                "jit": False,
-                "compiler": "shell",
-                "jit_options": jit_options,
-                "verbose": False
-            }
-            opti_problem.write_nlp_problem(200, options)
-            ```
+            .. code-block:: python
+
+               jit_options = {"flags": ["-O3"], "verbose": False, "compiler": "gcc"}
+               options = {
+                   "jit": False,
+                   "compiler": "shell",
+                   "jit_options": jit_options,
+                   "verbose": False
+               }
+               opti_problem.write_nlp_problem(200, options)
 
 
 
